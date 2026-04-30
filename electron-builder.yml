@@ -1,0 +1,25 @@
+appId: com.ledgerforge.ai
+productName: LedgerForge AI
+directories:
+  output: release
+files:
+  - out/**/*
+  - package.json
+asarUnpack:
+  - node_modules/better-sqlite3/**/*
+extraResources:
+  - from: drizzle/migrations
+    to: migrations
+    filter:
+      - '**/*'
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Office
+win:
+  target:
+    - nsis
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
