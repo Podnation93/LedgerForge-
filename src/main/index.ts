@@ -1,8 +1,11 @@
 import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'node:path'
 import { registerIpc } from './ipc/register'
+import { configureLogger, flushLogger, logger } from './logger'
+import { initMainTelemetry } from './telemetry'
 
 function createWindow(): void {
+  logger.info('Creating main window')
   const mainWindow = new BrowserWindow({
     width: 1440,
     height: 920,
@@ -28,14 +31,25 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedUrl) => {
+    logger.error({ errorCode, errorDescription, validatedUrl }, 'Renderer failed to load')
+  })
+
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    logger.error({ reason: details.reason, exitCode: details.exitCode }, 'Renderer process exited')
+  })
+
   if (process.env.ELECTRON_RENDERER_URL) {
-    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
+    void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
 
 app.whenReady().then(() => {
+  configureLogger()
+  initMainTelemetry()
+  logger.info({ version: app.getVersion(), packaged: app.isPackaged }, 'LedgerForge main process ready')
   registerIpc()
   createWindow()
   app.on('activate', () => {
@@ -45,4 +59,9 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('before-quit', () => {
+  logger.info('LedgerForge shutting down')
+  flushLogger()
 })

@@ -16,6 +16,8 @@
     "preview": "electron-vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b",
+    "db:generate": "drizzle-kit generate",
+    "db:check": "drizzle-kit check",
     "postinstall": "node scripts/postinstall.mjs",
     "pack:linux": "npm run build && electron-builder --linux AppImage deb",
     "pack:win": "npm run build && electron-builder --win nsis"
@@ -35,6 +37,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@sentry/electron": "^7.13.0",
     "@tanstack/react-table": "^8.21.3",
     "autoprefixer": "^10.5.0",
     "better-sqlite3": "^12.9.0",
@@ -45,6 +48,7 @@
     "jszip": "^3.10.1",
     "lucide-react": "^1.14.0",
     "papaparse": "^5.5.3",
+    "pino": "^10.3.1",
     "postcss": "^8.5.12",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
@@ -67,6 +71,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.7.0",
+    "drizzle-kit": "^0.31.10",
     "electron": "^41.3.0",
     "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
@@ -78,5 +83,10 @@
     "typescript-eslint": "^8.58.2",
     "vite": "^7.3.2",
     "vitest": "^4.1.5"
+  },
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "^0.25.0"
+    }
   }
 }
