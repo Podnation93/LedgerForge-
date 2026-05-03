@@ -14,6 +14,7 @@ export function getDatabase(): Database.Database {
   connection.pragma('foreign_keys = ON')
   migrate(connection)
   seedDefaults(connection)
+  removeBundledDemoData(connection)
   return connection
 }
 
@@ -86,6 +87,22 @@ function migrate(db: Database.Database): void {
       sha256 TEXT NOT NULL,
       notes TEXT NOT NULL DEFAULT ''
     );
+    CREATE TABLE IF NOT EXISTS document_imports (
+      id TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      source_path TEXT NOT NULL,
+      stored_path TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      size_bytes INTEGER NOT NULL,
+      sha256 TEXT NOT NULL,
+      status TEXT NOT NULL,
+      ocr_status TEXT NOT NULL,
+      extracted_text TEXT NOT NULL DEFAULT '',
+      error_message TEXT NOT NULL DEFAULT ''
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_document_imports_sha256 ON document_imports (sha256);
+    CREATE INDEX IF NOT EXISTS idx_document_imports_created_at ON document_imports (created_at);
     CREATE TABLE IF NOT EXISTS products_services (
       id TEXT PRIMARY KEY,
       sku TEXT NOT NULL,
@@ -153,12 +170,30 @@ function migrate(db: Database.Database): void {
       entity_id TEXT NOT NULL,
       details_json TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS budgets (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      start_date TEXT NOT NULL,
+      end_date TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE TABLE IF NOT EXISTS budget_lines (
+      id TEXT PRIMARY KEY,
+      budget_id TEXT NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
+      account_id TEXT NOT NULL REFERENCES accounts(id),
+      amount_cents INTEGER NOT NULL,
+      spent_cents INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_budgets_active ON budgets (is_active);
+    CREATE INDEX IF NOT EXISTS idx_budget_lines_budget ON budget_lines (budget_id);
+    CREATE INDEX IF NOT EXISTS idx_budget_lines_account ON budget_lines (account_id);
   `)
 }
 
 function seedDefaults(db: Database.Database): void {
   const settings = {
-    businessName: 'LedgerForge Demo Co',
+    businessName: 'LedgerForge',
     abn: '',
     gstRegistered: true,
     gstBasis: 'cash',
@@ -182,7 +217,7 @@ function seedDefaults(db: Database.Database): void {
   for (const row of taxCodes) insertTax.run(...row)
 
   const accounts = [
-    ['acct-bank', '100', 'Business Bank Account', 'asset', 'BAS_EXCLUDED', 1245000],
+    ['acct-bank', '100', 'Business Bank Account', 'asset', 'BAS_EXCLUDED', 0],
     ['acct-sales', '400', 'Sales Revenue', 'income', 'GST_SALES', 0],
     ['acct-office', '610', 'Office Expenses', 'expense', 'GST_PURCHASES', 0],
     ['acct-software', '620', 'Software Subscriptions', 'expense', 'GST_PURCHASES', 0],
@@ -190,39 +225,11 @@ function seedDefaults(db: Database.Database): void {
   ]
   const insertAccount = db.prepare('INSERT OR IGNORE INTO accounts VALUES (?, ?, ?, ?, ?, ?)')
   for (const row of accounts) insertAccount.run(...row)
+}
 
-  const existingTransactions = db.prepare('SELECT COUNT(*) as count FROM transactions').get() as { count: number }
-  if (existingTransactions.count === 0) {
-    const insertTransaction = db.prepare('INSERT INTO transactions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
-    const insertSplit = db.prepare('INSERT INTO transaction_splits VALUES (?, ?, ?, ?, ?, ?, ?)')
-    const samples = [
-      ['txn-1', '2026-04-03', 'Website project deposit', 'Northbank Studio', 660000, 'AUD', 'reconciled', 1, 'INV-1001', 'acct-sales', 'GST_SALES'],
-      ['txn-2', '2026-04-08', 'Design software subscription', 'Figma', -9900, 'AUD', 'categorised', 0, 'CARD', 'acct-software', 'GST_PURCHASES'],
-      ['txn-3', '2026-04-18', 'Office supplies', 'Officeworks', -24200, 'AUD', 'categorised', 0, 'CARD', 'acct-office', 'GST_PURCHASES'],
-      ['txn-4', '2026-04-21', 'Consulting income', 'Valiant Kahn', 330000, 'AUD', 'reconciled', 1, 'INV-1002', 'acct-sales', 'GST_SALES'],
-    ]
-    for (const row of samples) {
-      insertTransaction.run(...row.slice(0, 9))
-      const amount = row[4] as number
-      const taxCode = row[10] as string
-      const gst = taxCode === 'GST_SALES' || taxCode === 'GST_PURCHASES' ? Math.round(Math.abs(amount) / 11) : 0
-      insertSplit.run(`${row[0]}-split`, row[0], row[9], amount, taxCode, gst, 100)
-    }
-  }
-
-  const existingDocs = db.prepare('SELECT COUNT(*) as count FROM documents').get() as { count: number }
-  if (existingDocs.count === 0) {
-    db.prepare('INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-      'doc-inv-1001',
-      'invoice',
-      'INV-1001',
-      'Northbank Studio',
-      '2026-04-01',
-      '2026-04-15',
-      'paid',
-      600000,
-      60000,
-      660000,
-    )
-  }
+function removeBundledDemoData(db: Database.Database): void {
+  db.prepare("UPDATE settings SET value = ? WHERE key = 'businessName' AND value = ?").run(JSON.stringify('LedgerForge'), JSON.stringify('LedgerForge Demo Co'))
+  db.prepare("UPDATE accounts SET balance_cents = 0 WHERE id = 'acct-bank' AND balance_cents = 1245000").run()
+  db.prepare("DELETE FROM transactions WHERE id IN ('txn-1', 'txn-2', 'txn-3', 'txn-4')").run()
+  db.prepare("DELETE FROM documents WHERE id = 'doc-inv-1001'").run()
 }

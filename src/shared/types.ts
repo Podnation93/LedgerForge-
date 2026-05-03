@@ -33,6 +33,14 @@ export interface TransactionSplit {
   businessUsePercent: number
 }
 
+export interface ReceiptAttachment {
+  id: string
+  transactionId: string
+  filePath: string
+  sha256: string
+  notes: string
+}
+
 export interface Transaction {
   id: string
   date: string
@@ -90,6 +98,11 @@ export interface BasPeriod {
   netGstCents: number
 }
 
+export interface BasPeriodReview extends BasPeriod {
+  transactions: Transaction[]
+  warnings: string[]
+}
+
 export interface DashboardSummary {
   revenueCents: number
   expensesCents: number
@@ -130,3 +143,23 @@ export interface ExportJob {
   filePath: string
   warnings: string[]
 }
+
+export interface CsvPreviewRow {
+  date: string
+  description: string
+  contactName: string
+  amountCents: number
+  duplicate: boolean
+  error: string
+}
+
+export interface CsvPreview {
+  sourceName: string
+  rowCount: number
+  importable: number
+  duplicates: number
+  errors: number
+  rows: CsvPreviewRow[]
+}
+
+export type { DocumentImport, DocumentImportResult, IntakeStatus, OcrStatus } from './documentIntake'

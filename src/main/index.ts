@@ -19,7 +19,12 @@ function createWindow(): void {
   })
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url)
+    try {
+      const parsed = new URL(url)
+      if (parsed.protocol === 'https:' || parsed.protocol === 'mailto:') void shell.openExternal(url)
+    } catch {
+      return { action: 'deny' }
+    }
     return { action: 'deny' }
   })
 

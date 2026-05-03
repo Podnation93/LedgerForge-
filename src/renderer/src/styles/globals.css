@@ -25,6 +25,8 @@ body {
 }
 
 button,
+input,
+select,
 textarea {
   font: inherit;
 }
@@ -90,7 +92,8 @@ textarea {
 
 .sidebar a,
 .collapse-button,
-.action-button {
+.action-button,
+.icon-button {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -258,6 +261,34 @@ h2 {
   background: #2563eb;
 }
 
+.icon-button {
+  justify-content: center;
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  border-color: #263348;
+  background: #111827;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.button-row.left {
+  justify-content: flex-start;
+}
+
+.metric-card.compact {
+  min-height: 96px;
+}
+
+.intake-summary {
+  margin-bottom: 16px;
+}
+
 .table-wrap {
   overflow: auto;
 }
@@ -284,6 +315,10 @@ th {
 
 td {
   color: #e2e8f0;
+}
+
+tr.selected-row td {
+  background: rgba(59, 130, 246, 0.13);
 }
 
 .notice {
@@ -329,6 +364,40 @@ textarea {
   border-radius: 8px;
   color: #f8fafc;
   background: #0b0f17;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #263348;
+  border-radius: 8px;
+  color: #f8fafc;
+  background: #0b0f17;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.check-row input {
+  width: auto;
+  min-height: auto;
 }
 
 .ai-output {
